@@ -3,11 +3,10 @@ import pandas as pd
 import plotly.express as px
 from sheets_integration import GoogleSheetsIntegration
 import json
+from dashboard_ui import render_dashboard_overview, render_bulk_operations_ui
 
 def render_dashboard():
     """Render the main dashboard interface."""
-    st.title("E-Commerce Products Dashboard")
-    
     # Initialize Google Sheets integration
     sheets = GoogleSheetsIntegration()
     
@@ -89,10 +88,14 @@ def render_dashboard():
         df = st.session_state.current_data
         
         # Dashboard tabs
-        tab1, tab2, tab3 = st.tabs(["Products Overview", "Edit Products", "Analytics"])
+        tab1, tab2, tab3, tab4 = st.tabs(["Dashboard", "Products Overview", "Edit Products", "Bulk Operations"])
         
-        # Tab 1: Products Overview
+        # Tab 1: Dashboard Overview with enhanced UI
         with tab1:
+            render_dashboard_overview(df)
+        
+        # Tab 2: Products Overview
+        with tab2:
             st.header("Products Overview")
             
             # Search and filter
@@ -131,8 +134,8 @@ def render_dashboard():
                 hide_index=True,
             )
         
-        # Tab 2: Edit Products
-        with tab2:
+        # Tab 3: Edit Products
+        with tab3:
             st.header("Edit Products")
             
             # Product selection
@@ -235,66 +238,10 @@ def render_dashboard():
                     else:
                         st.error("Spreadsheet not loaded. Please load data first.")
         
-        # Tab 3: Analytics
-        with tab3:
-            st.header("Product Analytics")
+        # Tab 4: Bulk Operations
+        with tab4:
+            render_bulk_operations_ui(df, sheets)
             
-            # Price distribution
-            if 'Regular price' in df.columns:
-                try:
-                    # Convert price columns to numeric
-                    df['Regular price'] = pd.to_numeric(df['Regular price'], errors='coerce')
-                    
-                    st.subheader("Price Distribution")
-                    fig = px.histogram(
-                        df, 
-                        x='Regular price',
-                        nbins=20,
-                        title="Product Price Distribution",
-                        labels={'Regular price': 'Price ($)'},
-                        color_discrete_sequence=['#3366CC']
-                    )
-                    st.plotly_chart(fig)
-                except Exception as e:
-                    st.error(f"Error creating price distribution chart: {str(e)}")
-            
-            # Category distribution
-            if 'Categories' in df.columns:
-                st.subheader("Category Distribution")
-                
-                # Extract all unique categories (they might be comma-separated)
-                all_categories = []
-                for cats in df['Categories'].dropna():
-                    categories = [c.strip() for c in str(cats).split(',')]
-                    all_categories.extend(categories)
-                
-                # Count occurrences
-                category_counts = pd.Series(all_categories).value_counts().reset_index()
-                category_counts.columns = ['Category', 'Count']
-                
-                # Create pie chart
-                fig = px.pie(
-                    category_counts, 
-                    values='Count', 
-                    names='Category',
-                    title="Products by Category"
-                )
-                st.plotly_chart(fig)
-            
-            # Status distribution
-            if 'Status' in df.columns:
-                st.subheader("Product Status")
-                status_counts = df['Status'].value_counts().reset_index()
-                status_counts.columns = ['Status', 'Count']
-                
-                fig = px.bar(
-                    status_counts,
-                    x='Status',
-                    y='Count',
-                    color='Status',
-                    title="Products by Status"
-                )
-                st.plotly_chart(fig)
     else:
         # Display instructions when no data is loaded
         st.info("👈 Please authenticate and load data from the sidebar to get started.")
@@ -309,9 +256,10 @@ def render_dashboard():
         2. Enter your **Spreadsheet URL** in the sidebar
         3. Click **Load Data** to fetch your product information
         4. Use the tabs to:
-           - View all products
+           - View dashboard overview with key metrics and visualizations
+           - Browse and search all products
            - Edit existing products or add new ones
-           - Analyze product data with charts and visualizations
+           - Perform bulk operations like status updates and price changes
         5. Use the AI Product Creator in the sidebar to generate new product ideas
         """)
         

@@ -53,7 +53,10 @@ streamlit run app.py
 
 2. Open your web browser and navigate to the URL displayed in the terminal (usually http://localhost:8501)
 3. In the sidebar:
-   - Enter your Google Sheets API credentials
+   - **Authenticate** using one of these methods:
+     - **Upload your Google Service Account JSON key file** (recommended)
+     - Paste your Google Service Account JSON key
+     - Use OAuth authentication
    - Enter the URL of your spreadsheet
    - Click "Load Data" to fetch your product information
 4. Use the tabs to:
