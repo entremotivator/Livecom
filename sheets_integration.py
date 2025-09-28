@@ -4,6 +4,7 @@ import pandas as pd
 import streamlit as st
 import json
 import os
+import tempfile
 
 class GoogleSheetsIntegration:
     def __init__(self):
@@ -14,7 +15,7 @@ class GoogleSheetsIntegration:
             st.session_state.gsheets_client = None
             
     def authenticate_with_key(self, api_key_json):
-        """Authenticate using a service account key JSON."""
+        """Authenticate using a service account key JSON string."""
         try:
             # Parse the JSON key
             creds_dict = json.loads(api_key_json)
@@ -33,6 +34,39 @@ class GoogleSheetsIntegration:
             
             return True, "Authentication successful"
         except Exception as e:
+            return False, f"Authentication failed: {str(e)}"
+    
+    def authenticate_with_key_file(self, uploaded_file):
+        """Authenticate using a service account key JSON file."""
+        try:
+            # Create a temporary file to store the uploaded content
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.json') as tmp_file:
+                tmp_file.write(uploaded_file.getvalue())
+                tmp_file_path = tmp_file.name
+            
+            # Define the scope
+            scope = ['https://spreadsheets.google.com/feeds',
+                    'https://www.googleapis.com/auth/drive']
+            
+            # Authenticate using the temporary file
+            creds = ServiceAccountCredentials.from_json_keyfile_name(tmp_file_path, scope)
+            client = gspread.authorize(creds)
+            
+            # Clean up the temporary file
+            os.unlink(tmp_file_path)
+            
+            # Store in session state
+            st.session_state.gsheets_creds = creds
+            st.session_state.gsheets_client = client
+            
+            return True, "Authentication successful"
+        except Exception as e:
+            # Clean up the temporary file if it exists
+            if 'tmp_file_path' in locals():
+                try:
+                    os.unlink(tmp_file_path)
+                except:
+                    pass
             return False, f"Authentication failed: {str(e)}"
     
     def authenticate_with_oauth(self):

@@ -19,9 +19,19 @@ def render_dashboard():
         st.subheader("Google Sheets Authentication")
         
         if not sheets.is_authenticated():
-            auth_method = st.radio("Authentication Method", ["API Key", "OAuth"])
+            auth_method = st.radio("Authentication Method", ["JSON File Upload", "API Key", "OAuth"])
             
-            if auth_method == "API Key":
+            if auth_method == "JSON File Upload":
+                uploaded_file = st.file_uploader("Upload Service Account JSON Key", type=["json"])
+                if uploaded_file is not None:
+                    if st.button("Authenticate with File"):
+                        with st.spinner("Authenticating..."):
+                            success, message = sheets.authenticate_with_key_file(uploaded_file)
+                            if success:
+                                st.success(message)
+                            else:
+                                st.error(message)
+            elif auth_method == "API Key":
                 api_key_json = st.text_area("Enter Service Account JSON Key", height=150)
                 if st.button("Authenticate"):
                     if api_key_json:
@@ -292,7 +302,10 @@ def render_dashboard():
         st.markdown("""
         ### How to use this dashboard:
         
-        1. **Authenticate** with Google Sheets using your API key or OAuth
+        1. **Authenticate** with Google Sheets using one of these methods:
+           - Upload your Google Service Account JSON key file
+           - Paste your Google Service Account JSON key
+           - Use OAuth authentication
         2. Enter your **Spreadsheet URL** in the sidebar
         3. Click **Load Data** to fetch your product information
         4. Use the tabs to:
@@ -301,6 +314,21 @@ def render_dashboard():
            - Analyze product data with charts and visualizations
         5. Use the AI Product Creator in the sidebar to generate new product ideas
         """)
+        
+        # Show instructions for getting a service account key
+        with st.expander("How to get a Google Service Account JSON Key"):
+            st.markdown("""
+            1. Go to the [Google Cloud Console](https://console.cloud.google.com/)
+            2. Create a new project or select an existing one
+            3. Navigate to "APIs & Services" > "Credentials"
+            4. Click "Create Credentials" and select "Service Account"
+            5. Fill in the service account details and click "Create"
+            6. Click on the newly created service account
+            7. Go to the "Keys" tab and click "Add Key" > "Create new key"
+            8. Select JSON as the key type and click "Create"
+            9. The JSON key file will be downloaded to your computer
+            10. Share your Google Sheet with the email address in the service account (found in the JSON file)
+            """)
 
 if __name__ == "__main__":
     render_dashboard()
